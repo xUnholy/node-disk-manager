@@ -57,7 +57,7 @@ function TagAndPushImage() {
   REPO="$1"
   TAG="$2"
 
-  #Add an option to specify a custom TAG_SUFFIX 
+  #Add an option to specify a custom TAG_SUFFIX
   #via environment variable. Default is no tag.
   #Example suffix could be "-debug" of "-dev"
   IMAGE_URI="${REPO}:${TAG}${TAG_SUFFIX}";
