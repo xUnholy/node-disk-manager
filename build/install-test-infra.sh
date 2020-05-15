@@ -5,7 +5,8 @@
 # minikube is available only on amd64, integration tests can be run
 # only on that platform
 
-ARCH=$1
+ARCH=$(go env GOARCH)
+
 if [ -z "$ARCH" ]; then
   echo "Test Infra platform not specified. Exiting. "
   exit 1

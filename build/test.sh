@@ -5,7 +5,7 @@
 set -e
 
 # architecute on which tests need to be run
-ARCH=$1
+ARCH=$(go env GOARCH)
 
 if [ -z "$ARCH" ]; then
   echo "platform not specified for running tests. Exiting."

@@ -21,52 +21,22 @@ SHELL:=/bin/bash
 # VERSION is the version of the binary.
 VERSION:=$(shell git describe --tags --always)
 
-# Determine the arch/os
-ifeq (${XC_OS}, )
-  XC_OS:=$(shell go env GOOS)
-endif
-export XC_OS
-
-ifeq (${XC_ARCH}, )
-  XC_ARCH:=$(shell go env GOARCH)
-endif
-export XC_ARCH
-
-ARCH:=${XC_OS}_${XC_ARCH}
-export ARCH
-
-ifeq (${BASE_DOCKER_IMAGEARM64}, )
-  BASE_DOCKER_IMAGEARM64 = "arm64v8/ubuntu:18.04"
-  export BASE_DOCKER_IMAGEARM64
-endif
-
-ifeq (${BASEIMAGE}, )
-ifeq ($(ARCH),linux_arm64)
-  BASEIMAGE:=${BASE_DOCKER_IMAGEARM64}
-else
-  # The ubuntu:16.04 image is being used as base image.
-  BASEIMAGE:=ubuntu:16.04
-endif
-endif
-export BASEIMAGE
-
 # The images can be pushed to any docker/image registeries
-# like docker hub, quay. The registries are specified in 
+# like docker hub, quay. The registries are specified in
 # the `build/push` script.
 #
 # The images of a project or company can then be grouped
 # or hosted under a unique organization key like `openebs`
 #
-# Each component (container) will be pushed to a unique 
-# repository under an organization. 
-# Putting all this together, an unique uri for a given 
+# Each component (container) will be pushed to a unique
+# repository under an organization.
+# Putting all this together, an unique uri for a given
 # image comprises of:
 #   <registry url>/<image org>/<image repo>:<image-tag>
 #
-# IMAGE_ORG can be used to customize the organization 
-# under which images should be pushed. 
-# By default the organization name is `openebs`. 
-
+# IMAGE_ORG can be used to customize the organization
+# under which images should be pushed.
+# By default the organization name is `openebs`.
 ifeq (${IMAGE_ORG}, )
   IMAGE_ORG="openebs"
   export IMAGE_ORG
@@ -87,8 +57,7 @@ ifeq (${DBUILD_SITE_URL}, )
   export DBUILD_SITE_URL
 endif
 
-export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL} --build-arg ARCH=${ARCH}
-
+export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL}
 
 # Initialize the NDM DaemonSet variables
 # Specify the NDM DaemonSet binary name
@@ -96,7 +65,7 @@ NODE_DISK_MANAGER=ndm
 # Specify the sub path under ./cmd/ for NDM DaemonSet
 BUILD_PATH_NDM=ndm_daemonset
 # Name of the image for NDM DaemoneSet
-DOCKER_IMAGE_NDM:=${IMAGE_ORG}/node-disk-manager-${XC_ARCH}:ci
+DOCKER_IMAGE_NDM:=${IMAGE_ORG}/node-disk-manager:ubuntu
 
 # Initialize the NDM Operator variables
 # Specify the NDM Operator binary name
@@ -104,7 +73,7 @@ NODE_DISK_OPERATOR=ndo
 # Specify the sub path under ./cmd/ for NDM Operator
 BUILD_PATH_NDO=manager
 # Name of the image for ndm operator
-DOCKER_IMAGE_NDO:=${IMAGE_ORG}/node-disk-operator-${XC_ARCH}:ci
+DOCKER_IMAGE_NDO:=${IMAGE_ORG}/node-disk-operator:ci
 
 # Initialize the NDM Exporter variables
 # Specfiy the NDM Exporter binary name
@@ -112,11 +81,10 @@ NODE_DISK_EXPORTER=exporter
 # Specify the sub path under ./cmd/ for NDM Exporter
 BUILD_PATH_EXPORTER=ndm-exporter
 # Name of the image for ndm exporter
-DOCKER_IMAGE_EXPORTER:=${IMAGE_ORG}/node-disk-exporter-${XC_ARCH}:ci
+DOCKER_IMAGE_EXPORTER:=${IMAGE_ORG}/node-disk-exporter:ci
 
-# Compile binaries and build docker images
 .PHONY: build
-build: clean build.common docker.ndm docker.ndo docker.exporter
+build: clean build.common build.ndm build.ndo build.exporter
 
 .PHONY: build.common
 build.common: license-check-go version
@@ -130,7 +98,7 @@ EXTERNAL_TOOLS=\
 # Bootstrap the build by downloading additional tools
 .PHONY: bootstrap
 bootstrap:
-	@for tool in  $(EXTERNAL_TOOLS) ; do \
+	@for tool in $(EXTERNAL_TOOLS) ; do \
 		echo "Installing $$tool" ; \
 		go get -u $$tool; \
 	done
@@ -144,7 +112,7 @@ install-dep:
 install-test-infra:
 	@echo "--> Installing test infra for running integration tests"
 	# installing test infrastructure is dependent on the platform
-	$(PWD)/build/install-test-infra.sh ${XC_ARCH}
+	$(PWD)/build/install-test-infra.sh
 
 .PHONY: header
 header:
@@ -182,69 +150,75 @@ version:
 	@echo $(VERSION)
 
 .PHONY: test
-test: 	vet fmt
+test: vet fmt
 	@echo "--> Running go test";
-	$(PWD)/build/test.sh ${XC_ARCH}
+	$(PWD)/build/test.sh
 
 .PHONY: integration-test
 integration-test:
 	@echo "--> Running integration test"
-	$(PWD)/build/integration-test.sh ${XC_ARCH}
-
-.PHONY: Dockerfile.ndm
-Dockerfile.ndm: ./build/ndm-daemonset/Dockerfile.in
-	sed -e 's|@BASEIMAGE@|$(BASEIMAGE)|g' $< >$@
-
-.PHONY: Dockerfile.ndo
-Dockerfile.ndo: ./build/ndm-operator/Dockerfile.in
-	sed -e 's|@BASEIMAGE@|$(BASEIMAGE)|g' $< >$@
-
-.PHONY: Dockerfile.exporter
-Dockerfile.exporter: ./build/ndm-exporter/Dockerfile.in
-	sed -e 's|@BASEIMAGE@|$(BASEIMAGE)|g' $< >$@
+	$(PWD)/build/integration-test.sh
 
 .PHONY: build.ndm
-build.ndm:
+build.ndm: bootstrap install-dep clean build.common
 	@echo '--> Building node-disk-manager binary...'
 	@pwd
 	@CTLNAME=${NODE_DISK_MANAGER} BUILDPATH=${BUILD_PATH_NDM} sh -c "'$(PWD)/build/build.sh'"
 	@echo '--> Built binary.'
 	@echo
 
-.PHONY: docker.ndm
-docker.ndm: build.ndm Dockerfile.ndm 
-	@echo "--> Building docker image for ndm-daemonset..."
-	@sudo docker build -t "$(DOCKER_IMAGE_NDM)" ${DBUILD_ARGS} -f Dockerfile.ndm .
+# Build ndm docker image with buildx
+# Experimental docker feature to build cross platform multi-architecture docker images
+# https://docs.docker.com/buildx/working-with-buildx/
+.PHONY: docker.buildx.ndm
+docker.buildx.ndm:
+	export DOCKER_CLI_EXPERIMENTAL=enabled
+	@if ! docker buildx ls | grep -q container-builder; then\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+	fi
+	@docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+		-t "$(DOCKER_IMAGE_NDM)" ${DBUILD_ARGS} -f ndm-daemonset.Dockerfile \
+		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_NDM)"
 	@echo
 
 .PHONY: build.ndo
-build.ndo:
+build.ndo: bootstrap install-dep clean build.common
 	@echo '--> Building node-disk-operator binary...'
 	@pwd
 	@CTLNAME=${NODE_DISK_OPERATOR} BUILDPATH=${BUILD_PATH_NDO} sh -c "'$(PWD)/build/build.sh'"
 	@echo '--> Built binary.'
 	@echo
 
-.PHONY: docker.ndo
-docker.ndo: build.ndo Dockerfile.ndo 
-	@echo "--> Building docker image for ndm-operator..."
-	@sudo docker build -t "$(DOCKER_IMAGE_NDO)" ${DBUILD_ARGS} -f Dockerfile.ndo .
+.PHONY: docker.buildx.ndo
+docker.buildx.ndo:
+	export DOCKER_CLI_EXPERIMENTAL=enabled
+	@if ! docker buildx ls | grep -q container-builder; then\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+	fi
+	@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+		-t "$(DOCKER_IMAGE_NDO)" ${DBUILD_ARGS} -f ndm-operator.Dockerfile \
+		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_NDO)"
 	@echo
 
 .PHONY: build.exporter
-build.exporter:
+build.exporter: bootstrap install-dep clean build.common
 	@echo '--> Building node-disk-exporter binary...'
 	@pwd
 	@CTLNAME=${NODE_DISK_EXPORTER} BUILDPATH=${BUILD_PATH_EXPORTER} sh -c "'$(PWD)/build/build.sh'"
 	@echo '--> Built binary.'
 	@echo
 
-.PHONY: docker.exporter
-docker.exporter: build.exporter Dockerfile.exporter
-	@echo "--> Building docker image for ndm-exporter..."
-	@sudo docker build -t "$(DOCKER_IMAGE_EXPORTER)" ${DBUILD_ARGS} -f Dockerfile.exporter .
+.PHONY: docker.buildx.exporter
+docker.buildx.exporter:
+	export DOCKER_CLI_EXPERIMENTAL=enabled
+	@if ! docker buildx ls | grep -q container-builder; then\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+	fi
+		@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+		-t "$(DOCKER_IMAGE_EXPORTER)" ${DBUILD_ARGS} -f ndm-exporter.Dockerfile \
+		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_EXPORTER)"
 	@echo
 
@@ -272,17 +246,17 @@ clean: header
 license-check-go:
 	@echo "--> Checking license header..."
 	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*' ) ; do \
-               awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
-       done); \
-       if [ -n "$${licRes}" ]; then \
-               echo "license header checking failed:"; echo "$${licRes}"; \
-               exit 1; \
-       fi
+			awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+		done); \
+		if [ -n "$${licRes}" ]; then \
+			echo "license header checking failed:"; echo "$${licRes}"; \
+			exit 1; \
+		fi
 	@echo "--> Done checking license."
 	@echo
 
 .PHONY: push
-push: 
-	DIMAGE=${IMAGE_ORG}/node-disk-manager-${XC_ARCH} ./build/push;
-	DIMAGE=${IMAGE_ORG}/node-disk-operator-${XC_ARCH} ./build/push;
-	DIMAGE=${IMAGE_ORG}/node-disk-exporter-${XC_ARCH} ./build/push;
+push:
+	DIMAGE=${IMAGE_ORG}/node-disk-manager ./build/push;
+	DIMAGE=${IMAGE_ORG}/node-disk-operator ./build/push;
+	DIMAGE=${IMAGE_ORG}/node-disk-exporter ./build/push;

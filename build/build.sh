@@ -34,15 +34,14 @@ moveCompiled(){
     OLDIFS=$IFS
     IFS=: MAIN_GOPATH=("$GOPATH")
     IFS=$OLDIFS
-    
+
     # Create the gopath bin if not already available
     mkdir -p "${MAIN_GOPATH[*]}"/bin/
 
     # Copy our OS/Arch to ${MAIN_GOPATH}/bin/ directory
-    DEV_PLATFORM="./bin/$(go env GOOS)_$(go env GOARCH)"
+    DEV_PLATFORM="./bin/"
     DEV_PLATFORM_OUTPUT=$(find "${DEV_PLATFORM}" -mindepth 1 -maxdepth 1 -type f)
     for F in ${DEV_PLATFORM_OUTPUT}; do
-        cp "${F}" bin/
         cp "${F}" "${MAIN_GOPATH[*]}"/bin/
     done
 
@@ -51,25 +50,14 @@ moveCompiled(){
 
 # Build
 build(){
-    for GOOS in "${XC_OSS[@]}"
-    do
-        for GOARCH in "${XC_ARCHS[@]}"
-        do
-            UNDERSCORE="_"
-            output_name="bin/${GOOS}${UNDERSCORE}${GOARCH}/$CTLNAME"
-
-            if [ "$GOOS" = "windows" ]; then
-                output_name+='.exe'
-            fi
-            echo "Building for: ${GOOS} ${GOARCH}"
-            gox -cgo -os="$GOOS" -arch="$GOARCH" -ldflags \
-               "-X github.com/openebs/node-disk-manager/pkg/version.GitCommit=${GIT_COMMIT} \
-                -X main.CtlName='${CTLNAME}' \
-                -X github.com/openebs/node-disk-manager/pkg/version.Version=${VERSION}" \
-                -output="$output_name" \
-               ./cmd/"$BUILDPATH"
-        done
-    done
+    output_name="bin/$CTLNAME"
+    echo "Building for: ${GOOS} ${GOARCH}"
+    gox -cgo -os="$GOOS" -arch="$GOARCH" -ldflags \
+        "-X github.com/openebs/node-disk-manager/pkg/version.GitCommit=${GIT_COMMIT} \
+        -X main.CtlName='${CTLNAME}' \
+        -X github.com/openebs/node-disk-manager/pkg/version.Version=${VERSION}" \
+        -output="$output_name" \
+        ./cmd/"$BUILDPATH"
     echo "Successfully built: ${CTLNAME}"
 }
 
@@ -98,22 +86,8 @@ then
   VERSION="${TRAVIS_TAG}"
 fi;
 
-
-# Determine the arch/os combos we're building for
-#XC_ARCH=${XC_ARCH:-"amd64"}
-#XC_OS=${XC_OS:-"linux"}
-
-XC_ARCHS=("${XC_ARCH// / }")
-XC_OSS=("${XC_OS// / }")
-
 echo "==> Removing old bin contents..."
 deleteOldContents
-
-# If its dev mode, only build for ourself
-if [[ -n "${NDM_AGENT_DEV}" ]]; then
-    XC_OS=$(go env GOOS)
-    XC_ARCH=$(go env GOARCH)
-fi
 
 # Build!
 echo "==> Building ${CTLNAME} ..."
