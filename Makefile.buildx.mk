@@ -82,7 +82,7 @@ docker.buildx.ndo:
 	@if ! docker buildx ls | grep -q container-builder; then\
 		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" --name container-builder --use;\
 	fi
-	@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
+	@docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
 		-t "$(DOCKER_IMAGE_NDO)" ${DBUILD_ARGS} -f ndm-operator.Dockerfile \
 		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_NDO)"
@@ -102,7 +102,7 @@ docker.buildx.exporter:
 	@if ! docker buildx ls | grep -q container-builder; then\
 		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" --name container-builder --use;\
 	fi
-		@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
+	@docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
 		-t "$(DOCKER_IMAGE_EXPORTER)" ${DBUILD_ARGS} -f ndm-exporter.Dockerfile \
 		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_EXPORTER)"
