@@ -60,9 +60,9 @@ buildx.ndm: bootstrap install-dep-nonsudo clean build.common
 docker.buildx.ndm:
 	export DOCKER_CLI_EXPERIMENTAL=enabled
 	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" --name container-builder --use;\
 	fi
-	@docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+	@docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
 		-t "$(DOCKER_IMAGE_NDM)" ${DBUILD_ARGS} -f ndm-daemonset.Dockerfile \
 		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_NDM)"
@@ -80,9 +80,9 @@ buildx.ndo: bootstrap install-dep-nonsudo clean build.common
 docker.buildx.ndo:
 	export DOCKER_CLI_EXPERIMENTAL=enabled
 	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" --name container-builder --use;\
 	fi
-	@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+	@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
 		-t "$(DOCKER_IMAGE_NDO)" ${DBUILD_ARGS} -f ndm-operator.Dockerfile \
 		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_NDO)"
@@ -100,9 +100,9 @@ buildx.exporter: bootstrap install-dep-nonsudo clean build.common
 docker.buildx.exporter:
 	export DOCKER_CLI_EXPERIMENTAL=enabled
 	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7" --name container-builder --use;\
+		docker buildx create --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" --name container-builder --use;\
 	fi
-		@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7" \
+		@sudo docker buildx build --platform "linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le" \
 		-t "$(DOCKER_IMAGE_EXPORTER)" ${DBUILD_ARGS} -f ndm-exporter.Dockerfile \
 		. --push
 	@echo "--> Build docker image: $(DOCKER_IMAGE_EXPORTER)"
