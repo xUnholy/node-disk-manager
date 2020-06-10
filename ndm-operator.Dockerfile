@@ -18,8 +18,8 @@ FROM golang:1.14 as build
 
 ARG TARGETPLATFORM
 
-ENV GO111MODULE=off \
-  CGO_ENABLED=0 \
+ENV GO111MODULE=on \
+  CGO_ENABLED=1 \
   DEBIAN_FRONTEND=noninteractive \
   PATH="/root/go/bin:${PATH}"
 
