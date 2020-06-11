@@ -10,9 +10,8 @@ on:
 jobs:
   ndm-daemonset:
     runs-on: ubuntu-latest
-    needs: test
     env:
-      TAG: ${{ github.ref#v }}
+      TAG: $(git describe --abbrev=0)
       IMAGE_ORG: 'raspbernetes'
     steps:
       - name: Checkout
@@ -39,7 +38,7 @@ jobs:
   ndm-exporter:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.ref#v }}
+      TAG: $(git describe --abbrev=0)
       IMAGE_ORG: 'raspbernetes'
     steps:
       - name: Checkout
@@ -66,7 +65,7 @@ jobs:
   ndm-operator:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.ref#v }}
+      TAG: $(git describe --abbrev=0)
       IMAGE_ORG: 'raspbernetes'
     steps:
       - name: Checkout
