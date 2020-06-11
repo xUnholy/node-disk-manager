@@ -41,8 +41,6 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
-        env:
-          IMAGE_ORG: raspbernetes
         run: |
           make docker.buildx.ndm
 
@@ -69,8 +67,6 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
-        env:
-          IMAGE_ORG: raspbernetes
         run: |
           make docker.buildx.exporter
 
@@ -97,7 +93,5 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
-        env:
-          IMAGE_ORG: raspbernetes
         run: |
           make docker.buildx.ndo
